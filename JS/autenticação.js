@@ -14,7 +14,7 @@ let servidores = [
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*"); // Permite acesso de qualquer origem
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept"); // Permite esses cabeçalhos na requisição
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Permite esses métodos HTTP
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS"); // Permite esses métodos HTTP
   if (req.method === 'OPTIONS') { // Verifica se o método é OPTIONS
     return res.sendStatus(200); // Responde com status 200 OK para requisições OPTIONS
   }
@@ -76,6 +76,19 @@ app.put('/servidores/atualizar/:id', authenticate, (req, res) => {
   }
 });
 
+// Rota para atualizar parcialmente um servidor existente (protegida por autenticação)
+app.patch('/servidores/atualizar/:id', authenticate, (req, res) => {
+  const id = parseInt(req.params.id); // Converte o parâmetro ID para um número inteiro
+  console.log(`Recebida requisição PATCH para ID: ${id} com dados: `, req.body); // Loga o ID e os dados recebidos
+  const index = servidores.findIndex(s => s.id === id); // Encontra o índice do servidor com o ID especificado
+  if (index !== -1) {
+    servidores[index] = { ...servidores[index], ...req.body }; // Atualiza o servidor com os novos dados
+    res.json(servidores[index]); // Responde com o servidor atualizado
+  } else {
+    res.status(404).send('Servidor não encontrado'); // Responde com status 404 se o servidor não for encontrado
+  }
+});
+
 // Rota para excluir um servidor (protegida por autenticação)
 app.delete('/servidores/deletar/:id', authenticate, (req, res) => {
   const id = parseInt(req.params.id); // Converte o parâmetro ID para um número inteiro
@@ -88,6 +101,9 @@ app.delete('/servidores/deletar/:id', authenticate, (req, res) => {
     res.status(404).send('Servidor não encontrado'); // Responde com status 404 se o servidor não for encontrado
   }
 });
+
+// Inicia o servidor na porta especificada
+
 
 // Inicia o servidor na porta especificada
 app.listen(port, () => {
