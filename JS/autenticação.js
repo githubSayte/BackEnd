@@ -1,14 +1,37 @@
 const express = require('express'); // Importa o módulo express
+const multer = require('multer'); // Importa o módulo multer
 const basicAuth = require('basic-auth'); // Importa o módulo basic-auth
+const path = require('path'); // Importa o módulo path
+const fs = require('fs'); // Importa o módulo fs
 const app = express(); // Cria uma instância do express
 const port = 3000; // Define a porta em que o servidor irá rodar
 
-// Array de exemplo com alguns servidores
-let servidores = [
-  { id: 1, nome: "Ana Maria Silva", cargo: "Professor", departamento: "Educação" },
-  { id: 2, nome: "Carlos Eduardo Santos", cargo: "Policial", departamento: "Segurança Pública" },
-  { id: 3, nome: "Mariana Oliveira", cargo: "Médico", departamento: "Saúde" },
+// Array de exemplo com alguns timeFutebol
+let timeFutebol = [
+  { id: 1, nome: "João Silva", cargo: "Treinador", departamento: "Técnico" },
+  { id: 2, nome: "Pedro Santos", cargo: "Preparador Físico", departamento: "Preparação Física" },
+  { id: 3, nome: "Maria Oliveira", cargo: "Médico", departamento: "Departamento Médico" },
+  { id: 4, nome: "Rafaela Pereira", cargo: "Psicóloga", departamento: "Apoio Psicológico" },
+  { id: 5, nome: "Carlos Oliveira", cargo: "Analista Tático", departamento: "Análise Tática" },
+  { id: 6, nome: "Luiz Mendes", cargo: "Gerente de Futebol", departamento: "Administração" },
+  { id: 7, nome: "Diego Costa", cargo: "Goleiro", departamento: "Equipe Principal" },
+  { id: 8, nome: "André Santos", cargo: "Zagueiro", departamento: "Equipe Principal" },
+  { id: 9, nome: "Fernando Silva", cargo: "Lateral", departamento: "Equipe Principal" },
+  { id: 10, nome: "Gustavo Oliveira", cargo: "Meio-Campista", departamento: "Equipe Principal" },
+  { id: 11, nome: "Lucas Mendonça", cargo: "Atacante", departamento: "Equipe Principal" },
 ];
+
+
+// Configuração do multer para armazenamento de arquivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Define o diretório onde os arquivos serão salvos
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`); // Define o nome do arquivo
+  }
+});
+const upload = multer({ storage: storage });
 
 // Middleware para permitir acesso a partir de qualquer origem (CORS)
 app.use((req, res, next) => {
@@ -38,16 +61,16 @@ const authenticate = (req, res, next) => {
   }
 };
 
-// Rota para obter todos os servidores (protegida por autenticação)
-app.get('/servidores/listar', authenticate, (req, res) => {
-  res.json(servidores); // Responde com o array de servidores em formato JSON
+// Rota para obter todos os timeFutebol (protegida por autenticação)
+app.get('/timeFutebol/listar', authenticate, (req, res) => {
+  res.json(timeFutebol); // Responde com o array de timeFutebol em formato JSON
 });
 
 // Rota para obter um servidor por ID (protegida por autenticação)
-app.get('/servidores/listarServidor/:id', authenticate, (req, res) => {
+app.get('/timeFutebol/listarServidor/:id', authenticate, (req, res) => {
   const id = parseInt(req.params.id); // Converte o parâmetro ID para um número inteiro
   console.log(`Recebida requisição GET para ID: ${id}`); // Loga o ID recebido
-  const servidor = servidores.find(s => s.id === id); // Encontra o servidor com o ID especificado
+  const servidor = timeFutebol.find(s => s.id === id); // Encontra o servidor com o ID especificado
   if (servidor) {
     res.json(servidor); // Responde com os dados do servidor encontrado
   } else {
@@ -56,55 +79,89 @@ app.get('/servidores/listarServidor/:id', authenticate, (req, res) => {
 });
 
 // Rota para adicionar um novo servidor (protegida por autenticação)
-app.post('/servidores/inserir', authenticate, (req, res) => {
+app.post('/timeFutebol/inserir', authenticate, (req, res) => {
   const novoServidor = req.body; // Obtém o novo servidor do corpo da requisição
-  novoServidor.id = servidores.length ? servidores[servidores.length - 1].id + 1 : 1; // Define o ID do novo servidor
-  servidores.push(novoServidor); // Adiciona o novo servidor ao array
+  novoServidor.id = timeFutebol.length ? timeFutebol[timeFutebol.length - 1].id + 1 : 1; // Define o ID do novo servidor
+  timeFutebol.push(novoServidor); // Adiciona o novo servidor ao array
   res.status(201).json(novoServidor); // Responde com status 201 e o novo servidor em formato JSON
 });
 
 // Rota para atualizar um servidor existente (protegida por autenticação)
-app.put('/servidores/atualizar/:id', authenticate, (req, res) => {
+app.put('/timeFutebol/atualizar/:id', authenticate, (req, res) => {
   const id = parseInt(req.params.id); // Converte o parâmetro ID para um número inteiro
   console.log(`Recebida requisição PUT para ID: ${id} com dados: `, req.body); // Loga o ID e os dados recebidos
-  const index = servidores.findIndex(s => s.id === id); // Encontra o índice do servidor com o ID especificado
+  const index = timeFutebol.findIndex(s => s.id === id); // Encontra o índice do servidor com o ID especificado
   if (index !== -1) {
-    servidores[index] = { ...servidores[index], ...req.body }; // Atualiza o servidor com os novos dados
-    res.json(servidores[index]); // Responde com o servidor atualizado
+    timeFutebol[index] = { ...timeFutebol[index], ...req.body }; // Atualiza o servidor com os novos dados
+    res.json(timeFutebol[index]); // Responde com o servidor atualizado
   } else {
     res.status(404).send('Servidor não encontrado'); // Responde com status 404 se o servidor não for encontrado
   }
 });
 
 // Rota para atualizar parcialmente um servidor existente (protegida por autenticação)
-app.patch('/servidores/atualizar/:id', authenticate, (req, res) => {
+app.patch('/timeFutebol/atualizar/:id', authenticate, (req, res) => {
   const id = parseInt(req.params.id); // Converte o parâmetro ID para um número inteiro
   console.log(`Recebida requisição PATCH para ID: ${id} com dados: `, req.body); // Loga o ID e os dados recebidos
-  const index = servidores.findIndex(s => s.id === id); // Encontra o índice do servidor com o ID especificado
+  const index = timeFutebol.findIndex(s => s.id === id); // Encontra o índice do servidor com o ID especificado
   if (index !== -1) {
-    servidores[index] = { ...servidores[index], ...req.body }; // Atualiza o servidor com os novos dados
-    res.json(servidores[index]); // Responde com o servidor atualizado
+    timeFutebol[index] = { ...timeFutebol[index], ...req.body }; // Atualiza o servidor com os novos dados
+    res.json(timeFutebol[index]); // Responde com o servidor atualizado
   } else {
     res.status(404).send('Servidor não encontrado'); // Responde com status 404 se o servidor não for encontrado
   }
 });
 
 // Rota para excluir um servidor (protegida por autenticação)
-app.delete('/servidores/deletar/:id', authenticate, (req, res) => {
+app.delete('/timeFutebol/deletar/:id', authenticate, (req, res) => {
   const id = parseInt(req.params.id); // Converte o parâmetro ID para um número inteiro
   console.log(`Recebida requisição DELETE para ID: ${id}`); // Loga o ID recebido
-  const index = servidores.findIndex(s => s.id === id); // Encontra o índice do servidor com o ID especificado
+  const index = timeFutebol.findIndex(s => s.id === id); // Encontra o índice do servidor com o ID especificado
   if (index !== -1) {
-    servidores.splice(index, 1); // Remove o servidor do array
+    timeFutebol.splice(index, 1); // Remove o servidor do array
     res.status(204).send(); // Responde com status 204 No Content
   } else {
     res.status(404).send('Servidor não encontrado'); // Responde com status 404 se o servidor não for encontrado
   }
 });
 
-// Inicia o servidor na porta especificada
+// Rota para upload de arquivo (protegida por autenticação)
+app.post('/upload', authenticate, upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+  }
+  res.status(200).json({ message: 'Arquivo enviado com sucesso', file: req.file });
+});
 
+// Rota para download de arquivo (protegida por autenticação)
+app.get('/download/:filename', authenticate, (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join(__dirname, 'uploads', filename);
 
+  fs.access(filepath, fs.constants.F_OK, (err) => {
+    if (err) {
+      return res.status(404).json({ message: 'Arquivo não encontrado' });
+    }
+    res.sendFile(filepath);
+  });
+});
+
+// Rota para receber campos da lista de timeFutebol no corpo da requisição
+app.post('/sua-rota', (req, res) => {
+  const { id, nome, cargo, departamento } = req.body; // Extrai os campos do corpo da requisição
+  // Faça o que precisar com os campos recebidos
+  console.log('ID:', id);
+  console.log('Nome:', nome);
+  console.log('Cargo:', cargo);
+  console.log('Departamento:', departamento);
+
+  // Aqui você pode processar os campos como quiser
+  // Por exemplo, você pode adicioná-los à sua lista de timeFutebol
+  timeFutebol.push({ id, nome, cargo, departamento });
+
+  // Envie uma resposta de volta
+  res.send('Campos recebidos e processados!');
+});
 // Inicia o servidor na porta especificada
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`); // Loga a URL do servidor
